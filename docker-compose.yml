@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    tty: true
+    container_name: nuxt-chat
+    ports:
+      - "3000:3000"
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
