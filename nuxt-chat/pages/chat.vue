@@ -1,5 +1,5 @@
 <template>
-  <UCard :ui="{ body: { padding: 'p-0' } }">
+  <UCard :ui="{ body: { padding: 'p-0 sm:p-0' } }">
     <template #header>
       <div class="flex items-center justify-between text-primary">
         <div class="flex items-center gap-x-2">
@@ -8,7 +8,7 @@
             Nuxt Chaaaat
           </div>
         </div>
-        <div class="bg-primary px-3 py-1.5 text-white cursor-pointer" @click="() => navigateTo('/')">
+        <div class="bg-primary px-3 py-1.5 cursor-pointer text-white" @click="() => navigateTo('/')">
           {{ $route.query.room }} から退出
         </div>
       </div>
@@ -16,11 +16,11 @@
 
     <div class="flex">
       <!-- sidebar -->
-      <div class="bg-slate-100 py-4 px-6">
+      <div class="py-4 px-6">
         <div class="mb-4">
           <div class="flex items-center gap-x-2 mb-2 px-3 py-1.5 rounded-md bg-white text-black">
             <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-6 h-6 font-semibold" />
-            <div class="text-base">部屋の名前</div>
+            <div class="text-base text-gray-900">部屋の名前</div>
           </div>
           <div class="text-gray-500 hover:text-gray-900 mb-2 captalize text-base ml-2">
             {{ currentRoom }}
@@ -29,34 +29,35 @@
         <div>
           <div class="flex items-center gap-x-2 mb-2 px-3 py-1.5 rounded-md bg-white text-black">
             <UIcon name="i-heroicons-user-group" class="w-6 h-6 font-semibold" />
-            <div class="text-base">ユーザー</div>
+            <div class="text-base text-gray-900">ユーザー</div>
           </div>
-        </div>
-        <div v-for="(user, i) in users" :key="i" class="text-gray-500 hover:text-gray-900 mb-2 captalize text-base ml-2"
-          :class="{ 'border-b border-primary': user.username === route.query.username }">
-          {{ user.username }}
+          <div v-for="(user, i) in users" :key="i"
+            class="text-gray-500 hover:text-gray-900 mb-2 captalize text-base ml-2"
+            :class="{ 'border-b border-primary': user.username === route.query.username }">
+            {{ user.username }}
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- chat -->
-    <div class="h-96 overflow-y-auto px-8 py-10 flex-1">
-      <div class="bg-trasnparent w-full mb-3 flex" v-for="(chat, i) in chats" :key="i" :class="{
-        'justify-center': chat.username === 'NuxtChat Admin',
-        'jusiify-end': chat.username === route.query.username,
-        'justify-start': chat.username !== route.query.username && chat.username !== 'NuxtChat Admin',
-      }">
-        <div class="px-6 py-2 w-1/2 rounded-md mb-3" :class="{
-          'bg-red-100': chat.username === 'NuxtChat Admin',
-          'bg-primary/20': chat.username === route.query.username,
-          'bg-green-300': chat.username !== route.query.username && chat.username !== 'NuxtChat Admin',
+      <!-- chat -->
+      <div class="h-96 overflow-y-auto px-8 py-10 flex-1">
+        <div class="bg-trasnparent w-full mb-3 flex" v-for="(chat, i) in chats" :key="i" :class="{
+          'justify-center': chat.username === 'NuxtChat Admin',
+          'jusiify-end': chat.username === route.query.username,
+          'justify-start': chat.username !== route.query.username && chat.username !== 'NuxtChat Admin',
         }">
-          <div class="flex items-center gap-x-3">
-            <div class="text-xs text-primary font-semibold">{{ chat.username }}</div>
-            <div class="text-xs">{{ chat.time }}</div>
-          </div>
-          <div class="mt-1 text-base">
-            {{ chat.text }}
+          <div class="px-6 py-2 w-1/2 rounded-md mb-3" :class="{
+            'bg-red-300': chat.username === 'NuxtChat Admin',
+            'bg-primary/70': chat.username === route.query.username,
+            'bg-orange-300': chat.username !== route.query.username && chat.username !== 'NuxtChat Admin',
+          }">
+            <div class="flex items-center gap-x-3">
+              <div class="text-xs text-gray-100 font-semibold">{{ chat.username }}</div>
+              <div class="text-xs text-gray-900">{{ chat.time }}</div>
+            </div>
+            <div class="mt-1 text-base text-gray-900">
+              {{ chat.text }}
+            </div>
           </div>
         </div>
       </div>
@@ -76,6 +77,7 @@
 </template>
 
 <script lang="ts" setup>
+import { io, type Socket } from 'socket.io-client';
 const route = useRoute();
 
 type Chat = {
@@ -93,18 +95,34 @@ type User = {
 const message = ref("");
 const chats = ref<Chat[]>([]);
 const users = ref<User[]>([]);
+const socket = ref<Socket>();
 const currentRoom = ref("");
 
-const sendMessage = () => {
+const sendMessage = async () => {
   console.log(message.value);
 }
-
 
 onMounted(() => {
   const { username, room } = route.query as Partial<Chat>;
   if (!username || !room) {
     navigateTo('/');
   }
+
+  socket.value = io({
+    path: '/api/socket.io',
+  });
+
+  // Join room
+  socket.value.emit("joinRoom", { username, room });
+  socket.value.on("message", (response: Chat) => {
+    chats.value.push(response);
+  });
+  socket.value.on("roomUsers", (response: { room: string, users: User[] }) => {
+    currentRoom.value = response.room;
+    users.value = response.users;
+
+  })
+
 });
 
 onBeforeUnmount(() => {
