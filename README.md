@@ -16,5 +16,5 @@
   - `socket.io-client`
 - `Biome` (v1.9.3)
   - formatterとlinter
-- `Days` (v1.1.1)
+- `Dayjs` (v1.11.13)
   - 日付操作
