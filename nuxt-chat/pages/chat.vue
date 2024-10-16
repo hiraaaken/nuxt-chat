@@ -43,8 +43,8 @@
       <div class="h-96 overflow-y-auto px-8 py-10 flex-1">
         <div class="bg-trasnparent w-full mb-3 flex" v-for="(chat, i) in chats" :key="i" :class="{
           'justify-center': chat.username === 'NuxtChat Admin',
-          'jusiify-end': chat.username === route.query.username,
-          'justify-start': chat.username !== route.query.username && chat.username !== 'NuxtChat Admin',
+          'justify-end': chat.username === route.query.username,
+          'justify-start': chat.username !== route.query.username,
         }">
           <div class="px-6 py-2 w-1/2 rounded-md mb-3" :class="{
             'bg-red-300': chat.username === 'NuxtChat Admin',
@@ -99,7 +99,10 @@ const socket = ref<Socket>();
 const currentRoom = ref("");
 
 const sendMessage = async () => {
-  console.log(message.value);
+  socket.value?.emit("chatMessage", message.value);
+  await nextTick(() => {
+    message.value = '';
+  });
 }
 
 onMounted(() => {
@@ -120,13 +123,12 @@ onMounted(() => {
   socket.value.on("roomUsers", (response: { room: string, users: User[] }) => {
     currentRoom.value = response.room;
     users.value = response.users;
-
-  })
-
+  });
 });
 
 onBeforeUnmount(() => {
-  // cleanup
+  console.log("disconnecting...");
+  socket.value?.disconnect();
 });
 </script>
 
